@@ -1,11 +1,11 @@
 cmake_minimum_required(VERSION 3.22)
 
-set(PROJECT_NAME transform_example)
+set(PROJECT_NAME imgui_example)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /utf-8")
 
 # 프로젝트 환경변수 설정
-set(WINDOW_NAME "Hello, camera!")
+set(WINDOW_NAME "Hello, ImGui!")
 set(WINDOW_WIDTH 640)
 set(WINDOW_HEIGHT 480)
 set(SHADER_PATH ${CMAKE_CURRENT_SOURCE_DIR}/shader)
