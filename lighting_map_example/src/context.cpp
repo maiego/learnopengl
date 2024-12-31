@@ -18,7 +18,7 @@ bool Context::Init()
     }
     SPDLOG_INFO("simpleProgram id: {}", m_simpleProgram->Get());
 
-    m_program = Program::Create("/lighting.vs", "/lighting.fs");
+    m_program = Program::Create("/lighting.vs", "/spot_lighting.fs");
     if (m_program == nullptr)
     {
         return false;
@@ -126,9 +126,12 @@ void Context::Render()
         if (ImGui::CollapsingHeader("light", ImGuiTreeNodeFlags_DefaultOpen))
         {
             ImGui::DragFloat3("l.position", glm::value_ptr(m_light.position), 0.01f);
-            ImGui::DragFloat3("l.ambient", glm::value_ptr(m_light.ambient), 0.01f, 0.0f, 1.0f);
-            ImGui::DragFloat3("l.diffuse", glm::value_ptr(m_light.diffuse), 0.01f, 0.0f, 1.0f);
-            ImGui::DragFloat3("l.specular", glm::value_ptr(m_light.specular), 0.01f, 0.0f, 1.0f);
+            ImGui::DragFloat3("l.direction", glm::value_ptr(m_light.direction), 0.01f);
+            ImGui::DragFloat2("l.cutoff", glm::value_ptr(m_light.cutoff), 0.01f);
+            ImGui::DragFloat("l.distance", &m_light.distance, 0.05f, 0.0f, 3000.0f);
+            ImGui::ColorEdit3("l.ambient", glm::value_ptr(m_light.ambient), 0.01f);
+            ImGui::ColorEdit3("l.diffuse", glm::value_ptr(m_light.diffuse), 0.01f);
+            ImGui::ColorEdit3("l.specular", glm::value_ptr(m_light.specular), 0.01f);
         }
 
         if (ImGui::CollapsingHeader("material", ImGuiTreeNodeFlags_DefaultOpen))
@@ -156,8 +159,8 @@ void Context::Render()
     // light 에 cube 그리기
     {
         auto lightModelTransform = 
-                glm::translate(glm::mat4(1.0f), m_light.position) *
-                glm::scale(glm::mat4(1.0f), glm::vec3(0.1f));
+            glm::translate(glm::mat4(1.0f), m_light.position) *
+            glm::scale(glm::mat4(1.0f), glm::vec3(0.1f));
         
         m_simpleProgram->Use();
         m_simpleProgram->SetUniform("color", glm::vec4(m_light.ambient + m_light.diffuse, 1.0f));
@@ -168,6 +171,12 @@ void Context::Render()
     m_program->Use();
     m_program->SetUniform("viewPos", m_cameraPos);
     m_program->SetUniform("light.position", m_light.position);
+    m_program->SetUniform("light.direction", m_light.direction);
+    m_program->SetUniform("light.cutoff", glm::vec2(
+        cosf(glm::radians(m_light.cutoff[0])),
+        cosf(glm::radians(m_light.cutoff[0] + m_light.cutoff[1]))));
+    m_program->SetUniform("light.attenuation", GetAttenuationCoeff(m_light.distance));
+    //m_program->SetUniform("light.direction", m_light.direction);
     m_program->SetUniform("light.ambient", m_light.ambient);
     m_program->SetUniform("light.diffuse", m_light.diffuse);
     m_program->SetUniform("light.specular", m_light.specular);
@@ -210,21 +219,6 @@ void Context::Render()
         
         glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, nullptr);
     }
-
-    // auto model = glm::rotate(glm::mat4(1.0f),
-    //     glm::radians(static_cast<float>(glfwGetTime()) * 120.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-
-    // auto view = glm::translate(glm::mat4(1.0f),
-    //     glm::vec3(0.0f, 0.0f, -3.0f));
-
-    // auto projection = glm::perspective(glm::radians(45.0f),
-    //     (float) 640 / (float)480, 0.01f, 10.0f);
-
-    // auto transform = projection * view * model;
-
-    // m_program->SetUniform("transform", transform);
-
-    // glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, nullptr);
 }
 
 void Context::ProcessInput(GLFWwindow* window)

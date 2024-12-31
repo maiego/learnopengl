@@ -53,13 +53,31 @@ private:
     glm::vec4 m_clearColor { glm::vec4(0.1f, 0.2f, 0.3f, 1.0f) };
 
     // light parameter
-    struct Light {
-        glm::vec3 position { glm::vec3(3.0f, 3.0f, 3.0f) };
+    struct DirectionalLight {
+        glm::vec3 direction { glm::vec3(-2.0f, -1.0f, -3.0f) };
         glm::vec3 ambient { glm::vec3(0.1f, 0.1f, 0.1f) };
         glm::vec3 diffuse { glm::vec3(0.5f, 0.5f, 0.5f) };
         glm::vec3 specular { glm::vec3(1.0f, 1.0f, 1.0f) };
     };
-    Light m_light;
+
+    struct PointLight {
+        glm::vec3 position { glm::vec3(3.0f, 3.0f, 3.0f) };
+        float distance { 32.0f };
+        glm::vec3 ambient { glm::vec3(0.1f, 0.1f, 0.1f) };
+        glm::vec3 diffuse { glm::vec3(0.5f, 0.5f, 0.5f) };
+        glm::vec3 specular { glm::vec3(1.0f, 1.0f, 1.0f) };
+    };
+
+    struct SpotLight {
+        glm::vec3 position { glm::vec3(3.0f, 3.0f, 3.0f) };
+        glm::vec3 direction { glm::vec3(-1.0f, -1.0f, -1.0f) };
+        glm::vec2 cutoff { glm::vec2(20.0f, 5.0f) };
+        float distance { 32.0f };
+        glm::vec3 ambient { glm::vec3(0.1f, 0.1f, 0.1f) };
+        glm::vec3 diffuse { glm::vec3(0.5f, 0.5f, 0.5f) };
+        glm::vec3 specular { glm::vec3(1.0f, 1.0f, 1.0f) };
+    };
+    SpotLight m_light;
 
     // material parameter
     struct Material {
