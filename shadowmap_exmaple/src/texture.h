@@ -20,6 +20,7 @@ public:
     void Bind() const;
     void SetFilter(uint32_t minFilter, uint32_t magFilter) const;
     void SetWrap(uint32_t sWrap, uint32_t tWrap) const;
+    void SetBorderColor(const glm::vec4& color) const;
 
 private:
     Texture() {}

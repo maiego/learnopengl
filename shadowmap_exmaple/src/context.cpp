@@ -117,6 +117,13 @@ bool Context::Init()
 
     m_shadowMap = ShadowMap::Create(1024, 1024);
 
+    m_lightingShadowProgram = Program::Create("/lighting_shadow.vs", "/lighting_shadow.fs");
+    if (nullptr == m_lightingShadowProgram)
+    {
+        SPDLOG_INFO("failed to create lighting shadow program: {}", m_lightingShadowProgram->Get());
+        return false;
+    }
+
     glClearColor(0.1f, 0.2f, 0.3f, 0.0f);
     glEnable(GL_MULTISAMPLE);
 
@@ -150,6 +157,7 @@ void Context::Render()
 
         if (ImGui::CollapsingHeader("light", ImGuiTreeNodeFlags_DefaultOpen))
         {
+            ImGui::Checkbox("l.directional", &m_light.directional);
             ImGui::DragFloat3("l.position", glm::value_ptr(m_light.position), 0.01f);
             ImGui::DragFloat3("l.direction", glm::value_ptr(m_light.direction), 0.01f);
             ImGui::DragFloat2("l.cutoff", glm::value_ptr(m_light.cutoff), 0.01f);
@@ -191,9 +199,11 @@ void Context::Render()
 
     glClear(GL_DEPTH_BUFFER_BIT);
     auto lightView = glm::lookAt(m_light.position, m_light.position + m_light.direction, glm::vec3(0.0f, 1.0f, 0.0f));
-    auto lightProjection = glm::perspective(
-        glm::radians(m_light.cutoff[0] + m_light.cutoff[1]) * 2.0f,
-        1.0f, 1.0f, m_light.distance);
+    auto lightProjection = m_light.directional ?
+        glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 1.0f, 30.0f) :
+        glm::perspective(
+            glm::radians((m_light.cutoff[0] + m_light.cutoff[1]) * 2.0f),
+            1.0f, 1.0f, m_light.distance);
 
     m_shadowMap->Bind();
     glClear(GL_DEPTH_BUFFER_BIT);
@@ -241,6 +251,7 @@ void Context::Render()
         m_box->Draw(m_simpleProgram.get());
     }
 
+    /* shadow 없는 기본 lighting 
     m_program->Use();
     m_program->SetUniform("viewPos", m_cameraPos);
     m_program->SetUniform("light.position", m_light.position);
@@ -254,9 +265,30 @@ void Context::Render()
     m_program->SetUniform("light.diffuse", m_light.diffuse);
     m_program->SetUniform("light.specular", m_light.specular);
     m_program->SetUniform("blinn", m_light.blinn);
+    */
+
+    m_lightingShadowProgram->Use();
+    m_lightingShadowProgram->SetUniform("viewPos", m_cameraPos);
+    m_lightingShadowProgram->SetUniform("light.directional", m_light.directional ? 1 : 0);
+    m_lightingShadowProgram->SetUniform("light.position", m_light.position);
+    m_lightingShadowProgram->SetUniform("light.direction", m_light.direction);
+    m_lightingShadowProgram->SetUniform("light.cutoff", glm::vec2(
+        cosf(glm::radians(m_light.cutoff[0])),
+        cosf(glm::radians(m_light.cutoff[0] + m_light.cutoff[1]))));
+    m_lightingShadowProgram->SetUniform("light.attenuation", GetAttenuationCoeff(m_light.distance));
+    m_lightingShadowProgram->SetUniform("light.ambient", m_light.ambient);
+    m_lightingShadowProgram->SetUniform("light.diffuse", m_light.diffuse);
+    m_lightingShadowProgram->SetUniform("light.specular", m_light.specular);
+    m_lightingShadowProgram->SetUniform("blinn", m_light.blinn);
+    m_lightingShadowProgram->SetUniform("lightTransform", lightProjection * lightView);
+
+    glActiveTexture(GL_TEXTURE3);
+    m_shadowMap->GetShadowMap()->Bind();
+    m_lightingShadowProgram->SetUniform("shadowMap", 3);
+    glActiveTexture(GL_TEXTURE0);
 
     
-    DrawScene(view, projection, m_program.get());
+    DrawScene(view, projection, m_lightingShadowProgram.get());
 
     // // 판 그리기    
     // auto modelTransform =
@@ -457,8 +489,8 @@ void Context::DrawScene(const glm::mat4& view, const glm::mat4& projection, cons
 {
     program->Use();
     auto modelTransform =
-        glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -0.7f, 2.0f)) *
-        glm::scale(glm::mat4(1.0f), glm::vec3(10.0f, 1.0f, 10.0f));
+        glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -0.5f, 0.0f)) *
+        glm::scale(glm::mat4(1.0f), glm::vec3(40.0f, 1.0f, 40.0f));
 
     auto transform = projection * view * modelTransform;
     program->SetUniform("transform", transform);
